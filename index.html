@@ -1,0 +1,426 @@
+<html>
+  <head>
+    <title>码小方的俄罗斯方块</title>
+    <style>
+      p {
+        margin-top: 0px;
+      }
+      #next-msg {
+        margin-left: 0px;
+      }
+      html {
+        padding: 0;
+        margin: 0;
+        font-size: 22px;
+        background: #3b3d3b;
+        color: #c2ffad;
+      }
+      body {
+        padding: 0;
+        margin: 0;
+        padding: 50px 20px;
+      }
+      #score {
+        color: #ff6c6c;
+        font-weight: bold;
+        vertical-align: middle;
+      }
+      #rows {
+        color: rgb(107, 107, 248);
+        font-weight: bold;
+        vertical-align: middle;
+      }
+      #left {
+        display: inline-block;
+        width: 208px;
+        height: 500px;
+      }
+      #left p {
+        margin: 0 0 15px 0;
+      }
+      #left :nth-child(3) {
+        margin-top: 50px;
+      }
+      #centre {
+        position: relative;
+        display: inline-block;
+        width: 300px;
+        height: 600px;
+        vertical-align: top;
+      }
+      #right {
+        display: inline-block;
+        width: 250px;
+        height: 500px;
+        vertical-align: top;
+      }
+      #game {
+        position: absolute;
+        background-color: white;
+        width: 300px;
+        height: 600px;
+      }
+      #mask {
+        position: absolute;
+        background-color: rgba(0, 0, 0, 0.4);
+        width: 300px;
+        height: 600px;
+      }
+      #start {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 120px;
+        height: 25px;
+        margin-top: -45px;
+        margin-left: -60px;
+        background: #c2ffad;
+        color: #000;
+        font-weight: bold;
+        padding: 13px 0;
+        font-size: 18px;
+        cursor: pointer;
+        text-decoration: none;
+        text-align: center;
+        /* z-index: 99999; */
+      }
+    </style>
+  </head>
+  <body>
+    <div id="left">
+      <p>分数(Score)：<span id="score">00000</span></p>
+      <p>已消灭(Rows)：<span id="rows">0</span></p>
+      <p>
+        操作方法：<br />
+        ↑ ： 方块顺时针变形<br />
+        ←：方块向左移动<br />
+        →：方块向右移动<br />
+        ↓ ： 方块加速掉落
+      </p>
+    </div>
+    <div id="centre">
+      <canvas id="game"></canvas>
+      <div id="mask"></div>
+      <a href="javascript:startGame();" id="start">开始游戏</a>
+    </div>
+    <div id="right">
+      <p id="next-msg">下一枚方块(Next):</p>
+      <canvas id="next"></canvas>
+    </div>
+    <script>
+      var I = {
+        color: "#fa1e1e",
+        maxWidth: 4,
+        blocks: {
+          0: [
+            [0, 0, 0, 0],
+            [1, 1, 1, 1],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+          ],
+          1: [
+            [0, 0, 1, 0],
+            [0, 0, 1, 0],
+            [0, 0, 1, 0],
+            [0, 0, 1, 0],
+          ],
+          2: [
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [1, 1, 1, 1],
+            [0, 0, 0, 0],
+          ],
+          3: [
+            [0, 1, 0, 0],
+            [0, 1, 0, 0],
+            [0, 1, 0, 0],
+            [0, 1, 0, 0],
+          ],
+        },
+      };
+      var J = {
+        color: "#42c6f0",
+        maxWidth: 3,
+        blocks: {
+          0: [
+            [0, 1, 0, 0],
+            [0, 1, 0, 0],
+            [1, 1, 0, 0],
+            [0, 0, 0, 0],
+          ],
+          1: [
+            [1, 0, 0, 0],
+            [1, 1, 1, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+          ],
+          2: [
+            [0, 1, 1, 0],
+            [0, 1, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 0, 0],
+          ],
+          3: [
+            [0, 0, 0, 0],
+            [1, 1, 1, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 0],
+          ],
+        },
+      };
+      var L = {
+        maxWidth: 3,
+        color: "#f5821f",
+        blocks: {
+          0: [
+            [0, 1, 0, 0],
+            [0, 1, 0, 0],
+            [0, 1, 1, 0],
+            [0, 0, 0, 0],
+          ],
+          1: [
+            [0, 0, 0, 0],
+            [1, 1, 1, 0],
+            [1, 0, 0, 0],
+            [0, 0, 0, 0],
+          ],
+          2: [
+            [1, 1, 0, 0],
+            [0, 1, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 0, 0],
+          ],
+          3: [
+            [0, 0, 1, 0],
+            [1, 1, 1, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+          ],
+        },
+      };
+      var O = {
+        maxWidth: 2,
+        color: "#f1fa1e",
+        blocks: {
+          0: [
+            [1, 1, 0, 0],
+            [1, 1, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+          ],
+          1: [
+            [1, 1, 0, 0],
+            [1, 1, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+          ],
+          2: [
+            [1, 1, 0, 0],
+            [1, 1, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+          ],
+          3: [
+            [1, 1, 0, 0],
+            [1, 1, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+          ],
+        },
+      };
+      var S = {
+        maxWidth: 3,
+        color: "#4bd838",
+        blocks: {
+          0: [
+            [0, 0, 0, 0],
+            [0, 1, 1, 0],
+            [1, 1, 0, 0],
+            [0, 0, 0, 0],
+          ],
+          1: [
+            [1, 0, 0, 0],
+            [1, 1, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 0, 0],
+          ],
+          2: [
+            [0, 1, 1, 0],
+            [1, 1, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+          ],
+          3: [
+            [0, 1, 0, 0],
+            [0, 1, 1, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 0],
+          ],
+        },
+      };
+      var T = {
+        maxWidth: 3,
+        color: "#d838cb",
+        blocks: {
+          0: [
+            [0, 0, 0, 0],
+            [1, 1, 1, 0],
+            [0, 1, 0, 0],
+            [0, 0, 0, 0],
+          ],
+          1: [
+            [0, 1, 0, 0],
+            [1, 1, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 0, 0],
+          ],
+          2: [
+            [0, 1, 0, 0],
+            [1, 1, 1, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+          ],
+          3: [
+            [0, 1, 0, 0],
+            [0, 1, 1, 0],
+            [0, 1, 0, 0],
+            [0, 0, 0, 0],
+          ],
+        },
+      };
+      var Z = {
+        maxWidth: 3,
+        color: "#fa1e1e",
+        blocks: {
+          0: [
+            [0, 0, 0, 0],
+            [1, 1, 0, 0],
+            [0, 1, 1, 0],
+            [0, 0, 0, 0],
+          ],
+          1: [
+            [0, 1, 0, 0],
+            [1, 1, 0, 0],
+            [1, 0, 0, 0],
+            [0, 0, 0, 0],
+          ],
+          2: [
+            [1, 1, 0, 0],
+            [0, 1, 1, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+          ],
+          3: [
+            [0, 0, 1, 0],
+            [0, 1, 1, 0],
+            [0, 1, 0, 0],
+            [0, 0, 0, 0],
+          ],
+        },
+      };
+
+      // 获取游戏画布
+      var cvs = document.getElementById("game");
+      // 设置画布的逻辑大小等于它的物理大小
+      cvs.width = cvs.clientWidth;
+      cvs.height = cvs.clientHeight;
+      // 获取游戏画布的画笔
+      var brs = cvs.getContext("2d");
+      // 设置画笔不绘制边框
+      brs.lineWidth = 0.0001;
+
+      // 在指定位置（X,Y）
+      // 绘制指定类型piece、指定方向dir 的方块
+      function drawPiece(piece, dir, x, y) {
+        // 方块指定方向的十六宫格
+        var blocks = piece.blocks[dir];
+        // 遍历十六宫格
+        for (var row = 0; row < 4; row++) {
+          for (var col = 0; col < 4; col++) {
+            // 如果格子需要填充，则绘制格子
+            if (blocks[row][col] == 1) {
+              // 设置画笔填充的颜色
+              brs.fillStyle = "red";
+              // 使用画笔绘制矩形
+              brs.fillRect((x + col) * 30, (y + row) * 30, 30, 30);
+            }
+          }
+        }
+      }
+
+      // 开始游戏
+      function startGame() {
+        // 获取按钮
+        var b = document.getElementById("start");
+        // 获取蒙层
+        var m = document.getElementById("mask");
+        // 将其隐藏
+        b.style.visibility = "hidden";
+        m.style.visibility = "hidden";
+
+        // drawPiece(I, 0, 1, 1);
+        // drawPiece(J, 0, 5, 1);
+        // drawPiece(L, 0, 1, 8);
+        playing = true;
+      }
+
+      // 记录方块的类型、方向和位置等等数据
+      var currentPiece = {
+        type: I, // 类型
+        dir: 0, // 方向
+        x: 3, // X坐标
+        y: 0, // Y坐标
+      };
+      var lastDropTime = 0; // 最后一次下落的时间
+      var setpSize = 600; // 方块下落所需时长(毫秒)
+      var playing = false; // 游戏的开始停止状态
+
+      // 游戏循环递归函数
+      function gameLoop() {
+        // 如果是游戏中状态
+        if (playing) {
+          // 根据玩家操作不断改变数据
+          // 处理玩家操作（会按改变相应的数据）
+          handlePlayerAction();
+          // 根据游戏规则不断改变数据
+          // 处理自动下落（会按改变相应的数据）
+          handleAutoDrop();
+          // 抹除界面元素，再根据数据重新绘制
+          redraw();
+        }
+        // 画面每1/60秒则刷新一次
+        requestAnimationFrame(gameLoop);
+      }
+      gameLoop();
+
+      function handlePlayerAction() {}
+      // 方块处理自动下落
+      function handleAutoDrop() {
+        // 当前时间
+        var now = new Date().getTime();
+        // 距离上一次方块自动下落的时长(毫秒数)
+        var duration = now - lastDropTime;
+        // 如果距离上次方块下落时长
+        // 超过规定的步长，则增加方块的Y指标
+        if (duration > setpSize) {
+          // 增加当前方块Y坐标
+          currentPiece.y += 1;
+          // 更新最后一次下落时间
+          lastDropTime = now;
+        }
+      }
+      // 根据最新数据重新绘制方块
+      function redraw() {
+        // 清空游戏画布
+        brs.clearRect(0, 0, 300, 600);
+        // 绘制方块
+        drawPiece(
+          currentPiece.type,
+          currentPiece.dir,
+          currentPiece.x,
+          currentPiece.y
+        );
+      }
+    </script>
+  </body>
+</html>
